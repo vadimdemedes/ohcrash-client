@@ -1,0 +1,50 @@
+{
+  "name": "ohcrash",
+  "version": "1.0.0",
+  "description": "OhCrash error reporting library",
+  "license": "MIT",
+  "main": "index.js",
+  "repository": "vdemedes/ohcrash",
+  "author": {
+    "name": "Vadim Demedes",
+    "email": "vdemedes@gmail.com",
+    "url": "https://github.com/vdemedes"
+  },
+  "scripts": {
+    "test": "tape",
+    "test-browser": "browserify test.js | testling"
+  },
+  "files": [
+    "index.js"
+  ],
+  "devDependencies": {
+    "bluebird": "^3.1.1",
+    "browserify": "^13.0.0",
+    "pinkie": "^2.0.1",
+    "pinkie-promise": "^2.0.0",
+    "sinon": "^1.17.2",
+    "tape": "^4.4.0",
+    "testling": "^1.7.1",
+    "whatwg-fetch": "^0.11.0"
+  },
+  "dependencies": {
+    "got": "^5.4.0",
+    "isarray": "^1.0.0"
+  },
+  "browser": {
+    "got": "whatwg-fetch"
+  },
+  "testling": {
+    "files": "test.js",
+    "browsers": [
+      "ie/9..latest",
+      "chrome/20..latest",
+      "firefox/10..latest",
+      "safari/latest",
+      "opera/11.0..latest",
+      "iphone/6",
+      "ipad/6",
+      "android-browser/4.2"
+    ]
+  }
+}
