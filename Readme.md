@@ -1,7 +1,16 @@
 # ohcrash
 
 [![Build Status](https://travis-ci.org/vdemedes/ohcrash.svg?branch=master)](https://travis-ci.org/vdemedes/ohcrash)
+
 [![Browser Support](https://ci.testling.com/vdemedes/ohcrash.png)](https://ci.testling.com/vdemedes/ohcrash)
+
+<h1 align="center">
+	<br>
+	<img width="300" src="media/logo.svg" alt="OhCrash">
+	<br>
+	<br>
+	<br>
+</h1>
 
 Error reporting client for [OhCrash](https://ohcrash.com).
 
