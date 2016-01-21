@@ -36,6 +36,7 @@ function OhCrash (apiKey, options) {
 	}
 
 	this.options = options || {};
+	this.apiKey = apiKey;
 	this.endpoint = this.options.endpoint || 'https://api.ohcrash.com/v1';
 
 	this._uncaughtException = this._uncaughtException.bind(this);
