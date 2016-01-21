@@ -123,6 +123,19 @@ if (isBrowser()) {
 		client.disable();
 		t.end();
 	});
+
+	test('turn off reporting window.onerror errors', function (t) {
+		var onError = window.onerror = function () {};
+
+		var client = clientStub({ windowOnError: false });
+		client.enable();
+
+		t.is(window.onerror, onError);
+		client.disable();
+		t.is(window.onerror, onError);
+		
+		t.end();
+	});
 }
 
 
@@ -151,6 +164,16 @@ if (isNode()) {
 		t.end();
 	});
 
+	test('turn off reporting of uncaught exceptions', function (t) {
+		var client = clientStub({ uncaughtExceptions: false });
+		client.enable();
+
+		t.is(process.listeners('uncaughtException').length, 0);
+
+		client.disable();
+		t.end();
+	});
+
 	test('report unhandled rejection', function (t) {
 		var client = clientStub();
 		client.enable();
@@ -171,6 +194,16 @@ if (isNode()) {
 			client.disable();
 			t.end();
 		}, 100);
+	});
+
+	test('turn off reporting of unhandled rejections', function (t) {
+		var client = clientStub({ unhandledRejections: false });
+		client.enable();
+
+		t.is(process.listeners('unhandledRejection').length, 0);
+
+		client.disable();
+		t.end();
 	});
 }
 

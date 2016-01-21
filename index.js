@@ -45,11 +45,16 @@ function OhCrash (apiKey, options) {
 
 OhCrash.prototype.enable = function () {
 	if (isNode()) {
-		process.on('uncaughtException', this._uncaughtException);
-		process.on('unhandledRejection', this._unhandledRejection);
+		if (this.options.uncaughtExceptions !== false) {
+			process.on('uncaughtException', this._uncaughtException);
+		}
+
+		if (this.options.unhandledRejections !== false) {
+			process.on('unhandledRejection', this._unhandledRejection);
+		}
 	}
 
-	if (isBrowser()) {
+	if (isBrowser() && this.options.windowOnError !== false) {
 		this._oldHandler = window.onerror;
 		window.onerror = this._onError;
 	}
@@ -57,11 +62,16 @@ OhCrash.prototype.enable = function () {
 
 OhCrash.prototype.disable = function () {
 	if (isNode()) {
-		process.removeListener('uncaughtException', this._uncaughtException);
-		process.removeListener('unhandledRejection', this._unhandledRejection);
+		if (this.options.uncaughtExceptions !== false) {
+			process.removeListener('uncaughtException', this._uncaughtException);
+		}
+
+		if (this.options.unhandledRejections !== false) {
+			process.removeListener('unhandledRejection', this._unhandledRejection);
+		}
 	}
 
-	if (isBrowser()) {
+	if (isBrowser() && this.options.windowOnError !== false) {
 		window.onerror = this._oldHandler;
 	}
 };
