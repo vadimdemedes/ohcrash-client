@@ -40,38 +40,64 @@ function OhCrash (apiKey, options) {
 
 	this._uncaughtException = this._uncaughtException.bind(this);
 	this._unhandledRejection = this._unhandledRejection.bind(this);
-	this._onError = this._onError.bind(this);
+	this._windowOnError = this._windowOnError.bind(this);
 }
 
 OhCrash.prototype.enable = function () {
 	if (isNode()) {
-		if (this.options.uncaughtExceptions !== false) {
-			process.on('uncaughtException', this._uncaughtException);
-		}
-
-		if (this.options.unhandledRejections !== false) {
-			process.on('unhandledRejection', this._unhandledRejection);
-		}
+		this._bindUncaughtException();
+		this._bindUnhandledRejection();
 	}
 
-	if (isBrowser() && this.options.windowOnError !== false) {
-		this._oldHandler = window.onerror;
-		window.onerror = this._onError;
+	if (isBrowser()) {
+		this._bindWindowOnError();
 	}
 };
 
 OhCrash.prototype.disable = function () {
 	if (isNode()) {
-		if (this.options.uncaughtExceptions !== false) {
-			process.removeListener('uncaughtException', this._uncaughtException);
-		}
-
-		if (this.options.unhandledRejections !== false) {
-			process.removeListener('unhandledRejection', this._unhandledRejection);
-		}
+		this._unbindUncaughtException();
+		this._unbindUnhandledRejection();
 	}
 
-	if (isBrowser() && this.options.windowOnError !== false) {
+	if (isBrowser()) {
+		this._unbindWindowOnError();
+	}
+};
+
+OhCrash.prototype._bindUncaughtException = function () {
+	if (this.options.uncaughtExceptions !== false) {
+		process.on('uncaughtException', this._uncaughtException);
+	}
+};
+
+OhCrash.prototype._bindUnhandledRejection = function () {
+	if (this.options.unhandledRejections !== false) {
+		process.on('unhandledRejection', this._unhandledRejection);
+	}
+};
+
+OhCrash.prototype._bindWindowOnError = function () {
+	if (this.options.windowOnError !== false) {
+		this._oldHandler = window.onerror;
+		window.onerror = this._windowOnError;
+	}
+};
+
+OhCrash.prototype._unbindUncaughtException = function () {
+	if (this.options.uncaughtExceptions !== false) {
+		process.removeListener('uncaughtException', this._uncaughtException);
+	}
+};
+
+OhCrash.prototype._unbindUnhandledRejection = function () {
+	if (this.options.unhandledRejections !== false) {
+		process.removeListener('unhandledRejection', this._unhandledRejection);
+	}
+};
+
+OhCrash.prototype._unbindWindowOnError = function () {
+	if (this._oldHandler) {
 		window.onerror = this._oldHandler;
 	}
 };
@@ -98,7 +124,7 @@ OhCrash.prototype._unhandledRejection = function (err) {
 	this.report(err);
 };
 
-OhCrash.prototype._onError = function (err) {
+OhCrash.prototype._windowOnError = function (err) {
 	console.log(err.stack);
 
 	if (this._oldHandler) {
