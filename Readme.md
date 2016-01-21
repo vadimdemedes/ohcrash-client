@@ -6,7 +6,7 @@
 
 <h1 align="center">
 	<br>
-	<img width="300" src="media/logo.svg" alt="OhCrash">
+	<img width="300" src="https://cdn.rawgit.com/vdemedes/ohcrash/master/media/logo.svg" alt="OhCrash">
 	<br>
 	<br>
 	<br>
