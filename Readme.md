@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/vdemedes/ohcrash.svg?branch=master)](https://travis-ci.org/vdemedes/ohcrash)
 [![Browser Support](https://ci.testling.com/vdemedes/ohcrash.png)](https://ci.testling.com/vdemedes/ohcrash)
 
-Error reporting client for [OhCrash](https://oncrash.com).
+Error reporting client for [OhCrash](https://ohcrash.com).
 
 
 ## Installation
@@ -15,7 +15,7 @@ $ npm install ohcrash --save
 
 ## Usage
 
-Log in to [OhCrash](https://oncrash.com) and [create a new project](https://oncrash.com/projects/new).
+Log in to [OhCrash](https://ohcrash.com) and [create a new project](https://ohcrash.com/projects/new).
 Copy your API key and use it to initialize client library:
 
 ```js
@@ -82,7 +82,7 @@ require('ohcrash')('api key', {
 });
 ```
 
-By default, process will exit with `1` exit code after uncaught exception is reported to OnCrash.
+By default, process will exit with `1` exit code after uncaught exception is reported to ohcrash.
 Exit can be prevented by setting `exit` option to `false`:
 
 ```js
