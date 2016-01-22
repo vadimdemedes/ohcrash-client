@@ -1,6 +1,6 @@
 {
   "name": "ohcrash",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OhCrash error reporting library",
   "license": "MIT",
   "main": "index.js",
