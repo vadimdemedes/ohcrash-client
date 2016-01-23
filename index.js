@@ -5,7 +5,7 @@
  */
 
 var isArray = require('isarray');
-var request = require('got');
+var fetch = require('isomorphic-fetch');
 
 
 /**
@@ -166,7 +166,7 @@ OhCrash.prototype.send = function (data) {
 		body: JSON.stringify(data)
 	};
 
-	return request(url, options);
+	return fetch(url, options);
 };
 
 

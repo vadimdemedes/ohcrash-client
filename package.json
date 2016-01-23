@@ -26,13 +26,9 @@
     "testling": "^1.7.1"
   },
   "dependencies": {
-    "got": "^5.4.0",
     "isarray": "^1.0.0",
-    "pinkie": "^2.0.1",
-    "whatwg-fetch": "^0.11.0"
-  },
-  "browser": {
-    "got": "whatwg-fetch"
+    "isomorphic-fetch": "^2.2.1",
+    "pinkie": "^2.0.1"
   },
   "testling": {
     "files": "test.js",
