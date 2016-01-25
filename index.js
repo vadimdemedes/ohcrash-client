@@ -186,8 +186,6 @@ function isNode () {
 	return !isBrowser();
 }
 
-function noop () {}
-
 
 /**
  * Expose `ohcrash`

@@ -17,7 +17,7 @@ var OhCrash = require('./');
 
 test('fail when api key is missing', function (t) {
 	t.throws(function () {
-		OhCrash();
+		new OhCrash();
 	}, TypeError, 'Expected `apiKey` for OhCrash client');
 
 	t.end();
@@ -81,7 +81,9 @@ test('report error with custom data', function (t) {
 	var client = clientStub();
 
 	var err = new Error('Error message');
-	client.report(err, { user: 'test@test.com' });
+	client.report(err, {
+		user: 'test@test.com'
+	});
 
 	t.true(client.send.calledOnce);
 	t.true(client.send.calledOn(client));
@@ -131,7 +133,10 @@ if (isBrowser()) {
 	test('turn off reporting window.onerror errors', function (t) {
 		var onError = window.onerror = function () {};
 
-		var client = clientStub({ windowOnError: false });
+		var client = clientStub({
+			windowOnError: false
+		});
+
 		client.enable();
 
 		t.is(window.onerror, onError);
@@ -149,7 +154,10 @@ if (isBrowser()) {
 
 if (isNode()) {
 	test('report uncaught exception', function (t) {
-		var client = clientStub({ exit: false });
+		var client = clientStub({
+			exit: false
+		});
+
 		client.enable();
 
 		var err = new Error('Error message');
@@ -170,7 +178,10 @@ if (isNode()) {
 	});
 
 	test('turn off reporting of uncaught exceptions', function (t) {
-		var client = clientStub({ uncaughtExceptions: false });
+		var client = clientStub({
+			uncaughtExceptions: false
+		});
+
 		client.enable();
 
 		t.is(process.listeners('uncaughtException').length, 0);
@@ -203,7 +214,10 @@ if (isNode()) {
 	});
 
 	test('turn off reporting of unhandled rejections', function (t) {
-		var client = clientStub({ unhandledRejections: false });
+		var client = clientStub({
+			unhandledRejections: false
+		});
+
 		client.enable();
 
 		t.is(process.listeners('unhandledRejection').length, 0);
