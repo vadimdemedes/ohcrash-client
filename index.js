@@ -135,21 +135,23 @@ OhCrash.prototype._windowOnError = function (err) {
 	this.report(err);
 };
 
-OhCrash.prototype.report = function (err, props) {
-	if (isArray(props)) {
-		props = {
-			labels: props
-		};
+OhCrash.prototype.report = function (err, data) {
+	var props = {};
+
+	if (isArray(data)) {
+		props.labels = data;
+		data = {};
 	}
 
-	if (!props) {
-		props = {};
+	if (!data) {
+		data = {};
 	}
 
 	return this.send({
 		name: err.name,
 		message: err.message,
 		stack: err.stack,
+		metaData: data,
 		props: props
 	});
 };

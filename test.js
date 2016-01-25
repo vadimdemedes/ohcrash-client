@@ -51,6 +51,7 @@ test('report error', function (t) {
 		name: err.name,
 		message: err.message,
 		stack: err.stack,
+		metaData: {},
 		props: {}
 	}));
 	t.end();
@@ -70,7 +71,8 @@ test('report error with labels', function (t) {
 		stack: err.stack,
 		props: {
 			labels: ['critical']
-		}
+		},
+		metaData: {}
 	}));
 	t.end();
 });
@@ -87,9 +89,10 @@ test('report error with custom data', function (t) {
 		name: err.name,
 		message: err.message,
 		stack: err.stack,
-		props: {
+		metaData: {
 			user: 'test@test.com'
-		}
+		},
+		props: {}
 	}));
 	t.end();
 });
@@ -117,6 +120,7 @@ if (isBrowser()) {
 			name: err.name,
 			message: err.message,
 			stack: err.stack,
+			metaData: {},
 			props: {}
 		}));
 
@@ -133,7 +137,7 @@ if (isBrowser()) {
 		t.is(window.onerror, onError);
 		client.disable();
 		t.is(window.onerror, onError);
-		
+
 		t.end();
 	});
 }
@@ -157,6 +161,7 @@ if (isNode()) {
 			name: err.name,
 			message: err.message,
 			stack: err.stack,
+			metaData: {},
 			props: {}
 		}));
 
@@ -188,6 +193,7 @@ if (isNode()) {
 				name: err.name,
 				message: err.message,
 				stack: err.stack,
+				metaData: {},
 				props: {}
 			}));
 
