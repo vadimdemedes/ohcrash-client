@@ -153,6 +153,8 @@ OhCrash.prototype.report = function (err, data) {
 		stack: err.stack,
 		metaData: data,
 		props: props
+	}).catch(function (err) {
+		console.log(err.stack);
 	});
 };
 
