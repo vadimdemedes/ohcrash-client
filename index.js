@@ -4,6 +4,7 @@
  * Dependencies
  */
 
+var envName = require('env-name');
 var isArray = require('isarray');
 var fetch = require('isomorphic-fetch');
 
@@ -136,7 +137,9 @@ OhCrash.prototype._windowOnError = function (err) {
 };
 
 OhCrash.prototype.report = function (err, data) {
-	var props = {};
+	var props = {
+		runtime: envName()
+	};
 
 	if (isArray(data)) {
 		props.labels = data;

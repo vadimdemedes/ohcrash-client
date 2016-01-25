@@ -5,6 +5,7 @@
  */
 
 var Promise = require('bluebird');
+var envName = require('env-name');
 var sinon = require('sinon');
 var test = require('tape');
 
@@ -52,7 +53,9 @@ test('report error', function (t) {
 		message: err.message,
 		stack: err.stack,
 		metaData: {},
-		props: {}
+		props: {
+			runtime: envName()
+		}
 	}));
 	t.end();
 });
@@ -70,6 +73,7 @@ test('report error with labels', function (t) {
 		message: err.message,
 		stack: err.stack,
 		props: {
+			runtime: envName(),
 			labels: ['critical']
 		},
 		metaData: {}
@@ -94,7 +98,9 @@ test('report error with custom data', function (t) {
 		metaData: {
 			user: 'test@test.com'
 		},
-		props: {}
+		props: {
+			runtime: envName()
+		}
 	}));
 	t.end();
 });
@@ -123,7 +129,9 @@ if (isBrowser()) {
 			message: err.message,
 			stack: err.stack,
 			metaData: {},
-			props: {}
+			props: {
+				runtime: envName()
+			}
 		}));
 
 		client.disable();
@@ -170,7 +178,9 @@ if (isNode()) {
 			message: err.message,
 			stack: err.stack,
 			metaData: {},
-			props: {}
+			props: {
+				runtime: envName()
+			}
 		}));
 
 		client.disable();
@@ -205,7 +215,9 @@ if (isNode()) {
 				message: err.message,
 				stack: err.stack,
 				metaData: {},
-				props: {}
+				props: {
+					runtime: envName()
+				}
 			}));
 
 			client.disable();
