@@ -43,6 +43,8 @@ function OhCrash (apiKey, options) {
 	this._uncaughtException = this._uncaughtException.bind(this);
 	this._unhandledRejection = this._unhandledRejection.bind(this);
 	this._windowOnError = this._windowOnError.bind(this);
+
+	this._uncaughtExceptions = 0;
 }
 
 OhCrash.prototype.enable = function () {
@@ -105,13 +107,22 @@ OhCrash.prototype._unbindWindowOnError = function () {
 };
 
 OhCrash.prototype._uncaughtException = function (err) {
-	console.log(err.stack);
+	var listeners = process.listeners('uncaughtException').length;
+	var exit = this.options.exit;
 
-	var client = this;
+	console.error(err.stack);
+
+	// don't report more than one uncaught exception
+	// if OhCrash is the only one listening
+	if (listeners === 1) {
+		if (exit !== false) {
+			this._unbindUncaughtException();
+		}
+	}
 
 	this.report(err).then(function () {
-		if (process.listeners('uncaughtException').length === 1) {
-			if (client.options.exit === false) {
+		if (listeners === 1) {
+			if (exit === false) {
 				return;
 			}
 
@@ -121,7 +132,7 @@ OhCrash.prototype._uncaughtException = function (err) {
 };
 
 OhCrash.prototype._unhandledRejection = function (err) {
-	console.log(err.stack);
+	console.error(err.stack);
 
 	this.report(err);
 };

@@ -57,6 +57,8 @@ test('report error', function (t) {
 			runtime: envName()
 		}
 	}));
+
+	ensureCleanup(t);
 	t.end();
 });
 
@@ -78,6 +80,8 @@ test('report error with labels', function (t) {
 		},
 		metaData: {}
 	}));
+
+	ensureCleanup(t);
 	t.end();
 });
 
@@ -102,6 +106,8 @@ test('report error with custom data', function (t) {
 			runtime: envName()
 		}
 	}));
+
+	ensureCleanup(t);
 	t.end();
 });
 
@@ -184,7 +190,42 @@ if (isNode()) {
 		}));
 
 		client.disable();
+		ensureCleanup(t);
 		t.end();
+	});
+
+	test('report only one uncaught exception if no one else is listening', function (t) {
+		// stub process.exit()
+		var oldExit = process.exit;
+		process.exit = sinon.spy();
+
+		var client = clientStub();
+		client.enable();
+
+		var err = new Error('Error message');
+		process.emit('uncaughtException', err);
+		process.emit('uncaughtException', err);
+
+		setTimeout(function () {
+			t.true(process.exit.calledOnce);
+			t.true(client.send.calledOnce);
+			t.true(client.send.calledOn(client));
+			t.true(client.send.calledWith({
+				name: err.name,
+				message: err.message,
+				stack: err.stack,
+				metaData: {},
+				props: {
+					runtime: envName()
+				}
+			}));
+
+			client.disable();
+			process.exit = oldExit;
+
+			ensureCleanup(t);
+			t.end();
+		}, 100);
 	});
 
 	test('turn off reporting of uncaught exceptions', function (t) {
@@ -257,4 +298,14 @@ function isBrowser () {
 
 function isNode () {
 	return !isBrowser();
+}
+
+// ensure all listeners are free
+function ensureCleanup (t) {
+	if (isBrowser()) {
+		return;
+	}
+
+	t.is(process.listeners('uncaughtException').length, 0);
+	t.is(process.listeners('unhandledRejection').length, 0);
 }
