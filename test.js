@@ -1,75 +1,69 @@
 'use strict';
 
-/**
- * Dependencies
- */
+const EventEmitter = require('events');
+const envName = require('env-name');
+const sinon = require('sinon');
+const delay = require('delay');
+const test = require('ava');
+const OhCrash = require('./');
 
-var Promise = require('bluebird');
-var envName = require('env-name');
-var sinon = require('sinon');
-var test = require('tape');
+const customConsole = {
+	log: () => {},
+	error: () => {}
+};
 
-var OhCrash = require('./');
+const createClient = options => {
+	options = Object.assign({
+		internals: {}
+	}, options);
 
+	options.internals.autoEnable = false;
 
-/**
- * Tests
- */
+	const client = new OhCrash('endpoint', options);
+	client.send = sinon.stub().returns(Promise.resolve());
 
-test('fail when api key is missing', function (t) {
-	t.throws(function () {
-		new OhCrash();
-	}, TypeError, 'Expected `apiKey` for OhCrash client');
+	return client;
+};
 
-	t.end();
+test('fail when endpoint is missing', t => {
+	t.throws(() => new OhCrash(), 'Endpoint is required');
 });
 
-test('set default endpoint', function (t) {
-	var client = clientStub();
-
-	t.is(client.endpoint, 'https://api.ohcrash.com/v1');
-	t.end();
-});
-
-test('set custom endpoint', function (t) {
-	var client = new OhCrash('apikey', {
-		endpoint: 'my endpoint'
+test('use register() to create a client', t => {
+	const client = OhCrash.register('endpoint', {
+		internals: {autoEnable: false}
 	});
 
-	t.is(client.endpoint, 'my endpoint');
-	t.end();
+	t.true(client instanceof OhCrash);
+	t.is(client.endpoint, 'endpoint');
+	t.deepEqual(client.options, {
+		globalProps: {},
+		internals: {autoEnable: false}
+	});
 });
 
-test('report error', function (t) {
-	var client = clientStub();
+test('report error', t => {
+	const client = createClient();
 
-	var err = new Error('Error message');
+	const err = new Error('Error message');
 	client.report(err);
 
 	t.true(client.send.calledOnce);
-	t.true(client.send.calledOn(client));
 	t.true(client.send.calledWith({
 		name: err.name,
 		message: err.message,
 		stack: err.stack,
-		metaData: {},
-		props: {
-			runtime: envName()
-		}
+		props: {runtime: envName()}
 	}));
-
-	ensureCleanup(t);
-	t.end();
 });
 
-test('report error with labels', function (t) {
-	var client = clientStub();
+test('report error with labels', t => {
+	const client = createClient();
 
-	var err = new Error('Error message');
-	client.report(err, ['critical']);
+	const err = new Error('Error message');
+	client.report(err, {labels: ['critical']});
 
 	t.true(client.send.calledOnce);
-	t.true(client.send.calledOn(client));
 	t.true(client.send.calledWith({
 		name: err.name,
 		message: err.message,
@@ -77,235 +71,188 @@ test('report error with labels', function (t) {
 		props: {
 			runtime: envName(),
 			labels: ['critical']
-		},
-		metaData: {}
+		}
 	}));
-
-	ensureCleanup(t);
-	t.end();
 });
 
-test('report error with custom data', function (t) {
-	var client = clientStub();
+test('report error with custom data', t => {
+	const client = createClient();
 
-	var err = new Error('Error message');
-	client.report(err, {
-		user: 'test@test.com'
-	});
+	const err = new Error('Error message');
+	client.report(err, {user: 'test@test.com'});
 
 	t.true(client.send.calledOnce);
-	t.true(client.send.calledOn(client));
 	t.true(client.send.calledWith({
 		name: err.name,
 		message: err.message,
 		stack: err.stack,
-		metaData: {
-			user: 'test@test.com'
-		},
 		props: {
+			runtime: envName(),
+			user: 'test@test.com'
+		}
+	}));
+});
+
+test('report error with global props', t => {
+	const client = createClient({
+		globalProps: {
+			env: 'production',
+			version: '1.0.0'
+		}
+	});
+
+	const err = new Error('Error message');
+	client.report(err, {user: 'test@test.com'});
+
+	t.true(client.send.calledOnce);
+	t.true(client.send.calledWith({
+		name: err.name,
+		message: err.message,
+		stack: err.stack,
+		props: {
+			env: 'production',
+			version: '1.0.0',
+			user: 'test@test.com',
 			runtime: envName()
 		}
 	}));
-
-	ensureCleanup(t);
-	t.end();
 });
 
-
-/**
- * Browser-specific tests
- */
-
-if (isBrowser()) {
-	test('report error via window.onerror', function (t) {
-		var onError = window.onerror = sinon.spy();
-
-		var client = clientStub();
-		client.enable();
-
-		var err = new Error('Error message');
-		window.onerror(err);
-
-		t.true(onError.calledOnce);
-		t.true(onError.calledWith(err));
-		t.true(client.send.calledOnce);
-		t.true(client.send.calledOn(client));
-		t.true(client.send.calledWith({
-			name: err.name,
-			message: err.message,
-			stack: err.stack,
-			metaData: {},
-			props: {
-				runtime: envName()
-			}
-		}));
-
-		client.disable();
-		t.end();
+test('auto listen to errors', t => {
+	const customProcess = new EventEmitter();
+	const client = new OhCrash('endpoint', {
+		internals: {process: customProcess}
 	});
 
-	test('turn off reporting window.onerror errors', function (t) {
-		var onError = window.onerror = function () {};
+	t.is(customProcess.listeners('uncaughtException').length, 1);
+	t.is(customProcess.listeners('unhandledRejection').length, 1);
 
-		var client = clientStub({
-			windowOnError: false
-		});
+	client.disable();
 
-		client.enable();
+	t.is(customProcess.listeners('uncaughtException').length, 0);
+	t.is(customProcess.listeners('unhandledRejection').length, 0);
+});
 
-		t.is(window.onerror, onError);
-		client.disable();
-		t.is(window.onerror, onError);
-
-		t.end();
-	});
-}
-
-
-/**
- * Node.js-specific tests
- */
-
-if (isNode()) {
-	test('report uncaught exception', function (t) {
-		var client = clientStub({
-			exit: false
-		});
-
-		client.enable();
-
-		var err = new Error('Error message');
-		process.emit('uncaughtException', err);
-
-		t.true(client.send.calledOnce);
-		t.true(client.send.calledOn(client));
-		t.true(client.send.calledWith({
-			name: err.name,
-			message: err.message,
-			stack: err.stack,
-			metaData: {},
-			props: {
-				runtime: envName()
-			}
-		}));
-
-		client.disable();
-		ensureCleanup(t);
-		t.end();
+test('report uncaught exception', t => {
+	const customProcess = new EventEmitter();
+	const client = createClient({
+		exit: false,
+		internals: {
+			process: customProcess,
+			console: customConsole
+		}
 	});
 
-	test('report only one uncaught exception if no one else is listening', function (t) {
-		// stub process.exit()
-		var oldExit = process.exit;
-		process.exit = sinon.spy();
+	client.enable();
 
-		var client = clientStub();
-		client.enable();
+	const err = new Error('Error message');
+	customProcess.emit('uncaughtException', err);
 
-		var err = new Error('Error message');
-		process.emit('uncaughtException', err);
-		process.emit('uncaughtException', err);
+	t.true(client.send.calledOnce);
+	t.true(client.send.calledWith({
+		name: err.name,
+		message: err.message,
+		stack: err.stack,
+		props: {runtime: envName()}
+	}));
 
-		setTimeout(function () {
-			t.true(process.exit.calledOnce);
-			t.true(client.send.calledOnce);
-			t.true(client.send.calledOn(client));
-			t.true(client.send.calledWith({
-				name: err.name,
-				message: err.message,
-				stack: err.stack,
-				metaData: {},
-				props: {
-					runtime: envName()
-				}
-			}));
+	client.disable();
 
-			client.disable();
-			process.exit = oldExit;
+	t.is(customProcess.listeners('uncaughtException').length, 0);
+	t.is(customProcess.listeners('unhandledRejection').length, 0);
+});
 
-			ensureCleanup(t);
-			t.end();
-		}, 100);
+test('report only one uncaught exception if no one else is listening', async t => {
+	const customProcess = new EventEmitter();
+	customProcess.exit = sinon.spy();
+
+	const client = createClient({
+		internals: {
+			process: customProcess,
+			console: customConsole
+		}
 	});
 
-	test('turn off reporting of uncaught exceptions', function (t) {
-		var client = clientStub({
-			uncaughtExceptions: false
-		});
+	client.enable();
 
-		client.enable();
+	const err = new Error('Error message');
+	customProcess.emit('uncaughtException', err);
+	customProcess.emit('uncaughtException', err);
 
-		t.is(process.listeners('uncaughtException').length, 0);
+	await delay(50);
 
-		client.disable();
-		t.end();
+	t.true(customProcess.exit.calledOnce);
+	t.true(client.send.calledOnce);
+	t.true(client.send.calledWith({
+		name: err.name,
+		message: err.message,
+		stack: err.stack,
+		props: {runtime: envName()}
+	}));
+
+	client.disable();
+
+	t.is(customProcess.listeners('uncaughtException').length, 0);
+	t.is(customProcess.listeners('unhandledRejection').length, 0);
+});
+
+test('turn off reporting of uncaught exceptions', t => {
+	const customProcess = new EventEmitter();
+	const client = createClient({
+		exceptions: false,
+		internals: {process: customProcess}
 	});
 
-	test('report unhandled rejection', function (t) {
-		var client = clientStub();
-		client.enable();
+	client.enable();
 
-		var err = new Error('Error message');
-		Promise.reject(err);
+	t.is(customProcess.listeners('uncaughtException').length, 0);
 
-		setTimeout(function () {
-			t.true(client.send.calledOnce);
-			t.true(client.send.calledOn(client));
-			t.true(client.send.calledWith({
-				name: err.name,
-				message: err.message,
-				stack: err.stack,
-				metaData: {},
-				props: {
-					runtime: envName()
-				}
-			}));
+	client.disable();
 
-			client.disable();
-			t.end();
-		}, 100);
+	t.is(customProcess.listeners('unhandledRejection').length, 0);
+});
+
+test('report unhandled rejection', t => {
+	const customProcess = new EventEmitter();
+
+	const client = createClient({
+		internals: {
+			process: customProcess,
+			console: customConsole
+		}
 	});
 
-	test('turn off reporting of unhandled rejections', function (t) {
-		var client = clientStub({
-			unhandledRejections: false
-		});
+	client.enable();
 
-		client.enable();
+	const err = new Error('Error message');
+	customProcess.emit('unhandledRejection', err);
 
-		t.is(process.listeners('unhandledRejection').length, 0);
+	t.true(client.send.calledOnce);
+	t.true(client.send.calledWith({
+		name: err.name,
+		message: err.message,
+		stack: err.stack,
+		props: {runtime: envName()}
+	}));
 
-		client.disable();
-		t.end();
+	client.disable();
+
+	t.is(customProcess.listeners('uncaughtException').length, 0);
+	t.is(customProcess.listeners('unhandledRejection').length, 0);
+});
+
+test('turn off reporting of unhandled rejections', t => {
+	const customProcess = new EventEmitter();
+	const client = createClient({
+		rejections: false,
+		internals: {process: customProcess}
 	});
-}
 
+	client.enable();
 
-/**
- * Helpers
- */
+	t.is(customProcess.listeners('unhandledRejection').length, 0);
 
-function clientStub (options) {
-	var client = new OhCrash('apikey', options);
-	client.send = sinon.stub().returns(Promise.resolve());
+	client.disable();
 
-	return client;
-}
-
-function isBrowser () {
-	return typeof window !== 'undefined';
-}
-
-function isNode () {
-	return !isBrowser();
-}
-
-// ensure all listeners are free
-function ensureCleanup (t) {
-	if (isBrowser()) {
-		return;
-	}
-
-	t.is(process.listeners('uncaughtException').length, 0);
-	t.is(process.listeners('unhandledRejection').length, 0);
-}
+	t.is(customProcess.listeners('uncaughtException').length, 0);
+});

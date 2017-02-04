@@ -1,208 +1,106 @@
 'use strict';
 
-/**
- * Dependencies
- */
+const envName = require('env-name');
+const got = require('got');
 
-var envName = require('env-name');
-var isArray = require('isarray');
-var fetch = require('isomorphic-fetch');
+class OhCrash {
+	constructor(endpoint, options) {
+		this.options = Object.assign({
+			internals: {},
+			globalProps: {}
+		}, options);
 
+		if (!endpoint) {
+			throw new TypeError('Endpoint is required');
+		}
 
-/**
- * Polyfill Promise for browsers
- */
+		this.endpoint = endpoint;
 
-if (isBrowser()) {
-	if (typeof window.Promise === 'undefined') {
-		window.Promise = require('pinkie');
-	}
-}
+		this.process = this.options.internals.process || process;
+		this.console = this.options.internals.console || console;
 
+		this.handleException = this.handleException.bind(this);
+		this.handleRejection = this.handleRejection.bind(this);
 
-/**
- * OhCrash client
- */
-
-function OhCrash (apiKey, options) {
-	if (!apiKey) {
-		throw new TypeError('Expected `apiKey` for OhCrash client');
-	}
-
-	if (!(this instanceof OhCrash)) {
-		var client = new OhCrash(apiKey, options);
-		client.enable();
-
-		return client;
-	}
-
-	this.options = options || {};
-	this.apiKey = apiKey;
-	this.endpoint = this.options.endpoint || 'https://api.ohcrash.com/v1';
-
-	this._uncaughtException = this._uncaughtException.bind(this);
-	this._unhandledRejection = this._unhandledRejection.bind(this);
-	this._windowOnError = this._windowOnError.bind(this);
-
-	this._uncaughtExceptions = 0;
-}
-
-OhCrash.prototype.enable = function () {
-	if (isNode()) {
-		this._bindUncaughtException();
-		this._bindUnhandledRejection();
-	}
-
-	if (isBrowser()) {
-		this._bindWindowOnError();
-	}
-};
-
-OhCrash.prototype.disable = function () {
-	if (isNode()) {
-		this._unbindUncaughtException();
-		this._unbindUnhandledRejection();
-	}
-
-	if (isBrowser()) {
-		this._unbindWindowOnError();
-	}
-};
-
-OhCrash.prototype._bindUncaughtException = function () {
-	if (this.options.uncaughtExceptions !== false) {
-		process.on('uncaughtException', this._uncaughtException);
-	}
-};
-
-OhCrash.prototype._bindUnhandledRejection = function () {
-	if (this.options.unhandledRejections !== false) {
-		process.on('unhandledRejection', this._unhandledRejection);
-	}
-};
-
-OhCrash.prototype._bindWindowOnError = function () {
-	if (this.options.windowOnError !== false) {
-		this._oldHandler = window.onerror;
-		window.onerror = this._windowOnError;
-	}
-};
-
-OhCrash.prototype._unbindUncaughtException = function () {
-	if (this.options.uncaughtExceptions !== false) {
-		process.removeListener('uncaughtException', this._uncaughtException);
-	}
-};
-
-OhCrash.prototype._unbindUnhandledRejection = function () {
-	if (this.options.unhandledRejections !== false) {
-		process.removeListener('unhandledRejection', this._unhandledRejection);
-	}
-};
-
-OhCrash.prototype._unbindWindowOnError = function () {
-	if (this._oldHandler) {
-		window.onerror = this._oldHandler;
-	}
-};
-
-OhCrash.prototype._uncaughtException = function (err) {
-	var listeners = process.listeners('uncaughtException').length;
-	var exit = this.options.exit;
-
-	console.error(err.stack);
-
-	// don't report more than one uncaught exception
-	// if OhCrash is the only one listening
-	if (listeners === 1) {
-		if (exit !== false) {
-			this._unbindUncaughtException();
+		if (this.options.internals.autoEnable !== false) {
+			this.enable();
 		}
 	}
 
-	this.report(err).then(function () {
+	enable() {
+		if (this.options.exceptions !== false) {
+			this.process.on('uncaughtException', this.handleException);
+		}
+
+		if (this.options.rejections !== false) {
+			this.process.on('unhandledRejection', this.handleRejection);
+		}
+	}
+
+	disable() {
+		this.process.removeListener('uncaughtException', this.handleException);
+		this.process.removeListener('unhandledRejection', this.handleRejection);
+	}
+
+	handleException(err) {
+		const listeners = this.process.listeners('uncaughtException').length;
+		const exit = this.options.exit;
+
+		this.console.error(err.stack);
+
+		// don't report more than one uncaught exception
+		// if OhCrash is the only one listening
 		if (listeners === 1) {
-			if (exit === false) {
-				return;
+			if (exit !== false) {
+				this.process.removeListener('uncaughtException', this.handleException);
 			}
-
-			process.exit(1);
 		}
-	});
-};
 
-OhCrash.prototype._unhandledRejection = function (err) {
-	console.error(err.stack);
+		this.report(err).then(() => {
+			if (listeners === 1) {
+				if (exit === false) {
+					return;
+				}
 
-	this.report(err);
-};
-
-OhCrash.prototype._windowOnError = function (err) {
-	console.log(err.stack);
-
-	if (this._oldHandler) {
-		this._oldHandler.call(window, err);
+				this.process.exit(1);
+			}
+		});
 	}
 
-	this.report(err);
-};
-
-OhCrash.prototype.report = function (err, data) {
-	var props = {
-		runtime: envName()
-	};
-
-	if (isArray(data)) {
-		props.labels = data;
-		data = {};
+	handleRejection(err) {
+		this.console.error(err.stack);
+		this.report(err);
 	}
 
-	if (!data) {
-		data = {};
+	report(err, props) {
+		props = Object.assign({runtime: envName()}, this.options.globalProps, props);
+
+		return this.send({
+			name: err.name,
+			message: err.message,
+			stack: err.stack,
+			props: props
+		}).catch(err => {
+			// catch error and log it without handling,
+			// since it's most likely coming from OhCrash
+			// to avoid infinite loop of error reporting
+			this.console.log(err.stack);
+		});
 	}
 
-	return this.send({
-		name: err.name,
-		message: err.message,
-		stack: err.stack,
-		metaData: data,
-		props: props
-	}).catch(function (err) {
-		console.log(err.stack);
-	});
-};
-
-OhCrash.prototype.send = function (data) {
-	var url = this.endpoint + '/errors';
-
-	var options = {
-		method: 'post',
-		headers: {
-			'authorization': 'Bearer ' + this.apiKey,
-			'content-type': 'application/json'
-		},
-		body: JSON.stringify(data)
-	};
-
-	return fetch(url, options);
-};
-
-
-/**
- * Helpers
- */
-
-function isBrowser () {
-	return typeof window !== 'undefined';
+	send(data) {
+		return got(`${this.endpoint}`, {
+			method: 'post',
+			headers: {
+				'content-type': 'application/json'
+			},
+			body: JSON.stringify(data)
+		});
+	}
 }
 
-function isNode () {
-	return !isBrowser();
-}
-
-
-/**
- * Expose `ohcrash`
- */
+OhCrash.register = function (endpoint, options) {
+	return new OhCrash(endpoint, options);
+};
 
 module.exports = OhCrash;
