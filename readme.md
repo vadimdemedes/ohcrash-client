@@ -26,7 +26,7 @@ Set up an [OhCrash microservice](https://github.com/vadimdemedes/ohcrash) and de
 There's no hosted version, so a URL to your own server is required.
 
 ```js
-require('ohcrash').register('https://my-ohcrash.now.sh');
+require('ohcrash-client').register('https://my-ohcrash.now.sh');
 ```
 
 That's it, from now on uncaught exceptions and unhandled rejections will be reported to the server.
@@ -38,7 +38,7 @@ Client's behavior can be customized via [options](#configuration).
 Client accepts an `options` object as a second argument, which can customize some of its behavior.
 
 ```js
-require('ohcrash').register('https://my-ohcrash.now.sh', {
+require('ohcrash-client').register('https://my-ohcrash.now.sh', {
 	// auto catch uncaught exceptions (default: `true`)
 	exceptions: true,
 
@@ -63,7 +63,7 @@ require('ohcrash').register('https://my-ohcrash.now.sh', {
 It is also possible to report errors manually by using `report()`.
 
 ```js
-const ohcrash = require('ohcrash').register('https://my-ohcrash.now.sh');
+const ohcrash = require('ohcrash-client').register('https://my-ohcrash.now.sh');
 
 const err = new Error('I know this error');
 await ohcrash.report(err);
