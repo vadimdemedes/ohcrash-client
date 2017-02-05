@@ -1,29 +1,28 @@
 {
-  "name": "ohcrash",
-  "version": "1.0.3",
+  "name": "ohcrash-client",
+  "version": "1.0.0",
   "description": "Node.js client for reporting errors to OhCrash server",
+  "author": "Vadim Demedes <vdemedes@gmail.com>",
   "license": "MIT",
-  "main": "index.js",
-  "repository": "vadimdemedes/ohcrash",
-  "author": {
-    "name": "Vadim Demedes",
-    "email": "vdemedes@gmail.com",
-    "url": "https://github.com/vadimdemedes"
-  },
+  "repository": "vadimdemedes/ohcrash-client",
   "scripts": {
     "test": "xo && ava"
   },
+  "engines": {
+    "node": ">= 4"
+  },
+  "main": "index.js",
   "files": [
     "index.js"
   ],
+  "dependencies": {
+    "env-name": "^1.0.0",
+    "got": "^6.7.1"
+  },
   "devDependencies": {
     "ava": "^0.18.1",
     "delay": "^1.3.1",
     "sinon": "^1.17.2",
     "xo": "^0.17.1"
-  },
-  "dependencies": {
-    "env-name": "^1.0.0",
-    "got": "^6.7.1"
   }
 }
