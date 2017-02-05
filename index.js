@@ -91,6 +91,7 @@ class OhCrash {
 	send(data) {
 		return got(`${this.endpoint}`, {
 			method: 'post',
+			timeout: 3000,
 			headers: {
 				'content-type': 'application/json'
 			},
